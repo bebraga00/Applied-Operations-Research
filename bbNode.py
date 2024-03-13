@@ -56,25 +56,73 @@ class BBNode:
             - tree.bestSolution (tableau de float) : meilleure solution entière trouvée (None si aucune n'a encore été trouvée) 
             - tree.bestObjective (float) : valeur de l'objectif de la meilleure solution entière connue. 
          
-           II - Comment savoir si une variable d de type float est fractionnaire ?
-           Utiliser "isFractional(d)" qui retourne "True" si d est fractionnaire.
+        #    II - Comment savoir si une variable d de type float est fractionnaire ?
+        #    Utiliser "isFractional(d)" qui retourne "True" si d est fractionnaire.
            
-           III - Comment calculer les parties entières inférieures et supérieures d'une variable de type float ?
-           Utiliser "math.floor(d)" et "math.ceil(d)".
+        #    III - Comment calculer les parties entières inférieures et supérieures d'une variable de type float ?
+        #    Utiliser "math.floor(d)" et "math.ceil(d)".
            
-           IV - Comment créer un nouveau sommet en lui ajoutant une nouvelle contrainte de la forme newA * x <= newRhs ?
-           Utiliser le constructeur "BBNode.create_non_root_node(parent, newA, newRhs)" dans lequel :
-             - parent correspond au noeud actuellement considéré (l'objet actuellement considéré dans une classe est obtenu grâce au mot-clé "self" en python) 
-             - newA : tableau contenant les coefficients de la nouvelle contrainte 
-               (pour créer un tableau contenant 10 float initialisés à la valeur 0.0, vous pouvez utiliser la syntaxe : monTableau = np.array([0.0] * 10)
-             - newRhs : valeur du second membre de la nouvelle contrainte.
-             Attention : les contraintes du tableau sont de la forme Ax <= b. Si vous voulez ajouter une contrainte x1 >= 2 (qui est équivalente à -x1 <= -2), il faudra donc que newA[0] soit égal à -1 et newRhs soit égal à -2.
+        #    IV - Comment créer un nouveau sommet en lui ajoutant une nouvelle contrainte de la forme newA * x <= newRhs ?
+        #    Utiliser le constructeur "BBNode.create_non_root_node(parent, newA, newRhs)" dans lequel :
+        #      - parent correspond au noeud actuellement considéré (l'objet actuellement considéré dans une classe est obtenu grâce au mot-clé "self" en python) 
+        #      - newA : tableau contenant les coefficients de la nouvelle contrainte 
+        #        (pour créer un tableau contenant 10 float initialisés à la valeur 0.0, vous pouvez utiliser la syntaxe : monTableau = np.array([0.0] * 10)
+        #      - newRhs : valeur du second membre de la nouvelle contrainte.
+        #      Attention : les contraintes du tableau sont de la forme Ax <= b. Si vous voulez ajouter une contrainte x1 >= 2 (qui est équivalente à -x1 <= -2), il faudra donc que newA[0] soit égal à -1 et newRhs soit égal à -2.
              
-           V - Comment brancher sur un objet "node" de type BBNode situé dans un arbre "tree" ?
-           node.branch(tree)
-        """
+        #    V - Comment brancher sur un objet "node" de type BBNode situé dans un arbre "tree" ?
+        #    node.branch(tree)
+
+            Données :
+            bestSolution : Meilleure solution entière connue (null si aucune solution connue)
+            R : relaxation linéaire du problème associé au noeud courant
             
-        # TODO
+            # si R admet une solution S alors
+                # si bestSolution est null ou si S est meilleure que bestSolution alors
+                    # si S est entière alors
+                        # bestSolution ← S
+                    # sinon
+                        # id ← indice de la 1ère variable fractionnaire dans S
+                        # Créer un sommet contenant la contrainte xid <= ground(S(xid)) et brancher dessus
+                        # Créer un sommet contenant la contrainte xid >= ceil(S(xid)) et brancher dessus
+        """
+        # print(self.depth)
+        
+
+        if(np.all(self.tableau.bestSolution != None)):
+            if(len(tree.bestSolution) == 0 or ((self.tableau.bestObjective > tree.bestObjective) and not(self.tableau.isMinimization)) or ((self.tableau.bestObjective < tree.bestObjective) and self.tableau.isMinimization)):
+                first_fractional = None
+                for i in range(len(self.tableau.bestSolution)):
+                    if(isFractional(self.tableau.bestSolution[i])):
+                        first_fractional = i
+                        break
+                
+                if(first_fractional != None):
+                    print("x[", first_fractional, "] = ", round(self.tableau.bestSolution[first_fractional], 2), sep="")
+                    newA = np.zeros(self.tableau.n)
+                    newA[first_fractional] = 1
+                    leftNode = BBNode.create_non_root(self, newA, math.floor(self.tableau.bestSolution[first_fractional]))
+                    print("    " * self.depth, end="")
+                    print("x[", first_fractional, "] <= ", math.floor(self.tableau.bestSolution[first_fractional]), ": ", sep="", end="")
+                    leftNode.branch(tree)
+
+                    # we have all constraints in the standard form, so to create a constraint with >=, we must use the negative form
+                    newA[first_fractional] = -1
+                    rightNode = BBNode.create_non_root(self, newA, -math.ceil(self.tableau.bestSolution[first_fractional]))
+                    print("    " * self.depth, end="")
+                    print("x[", first_fractional, "] >= ", math.ceil(self.tableau.bestSolution[first_fractional]), ": ", sep="", end="")
+                    rightNode.branch(tree)
+                # if we find a fractional solution which is better than the current one
+                else:
+                    print("Integer solution (z = ", round(self.tableau.bestObjective,2), ")", sep="")
+                    # self.tableau.displaySolution()
+                    tree.bestSolution = self.tableau.bestSolution
+                    tree.bestObjective = self.tableau.bestObjective
+            else:
+                print("Relaxation worse than bound (relaxation = ", round(self.tableau.bestObjective, 2), ", best integer solution = ", round(tree.bestObjective, 2), ")", sep="")
+        else:
+            print("Infeasable solution")
+
 
     """
          (attention : ne pas utiliser directement cette méthode, utiliser à la place create_root ou create_non_root)
@@ -91,7 +139,7 @@ class BBNode:
             self.tableau = tableau.Tableau(A, rhs, obj, isMinimization)
             self.depth = 0
         else:
-                
+
             # Ajouter la contrainte
             self.depth = parent.depth + 1
 

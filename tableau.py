@@ -4,7 +4,7 @@ import sys
 def main():
 
     # Si le problème n'est pas sous forme normale, il faut le transformer 
-    normalForm = False
+    normalForm = True
 
     # Si on résout un problème sous forme normale 
     if normalForm:
@@ -65,7 +65,7 @@ class Tableau:
     isMinimization = True
 
     # Vrai si on souhaite afficher le tableau à chaque itération de l'algorithme
-    DISPLAY_SIMPLEX_LOGS = True
+    DISPLAY_SIMPLEX_LOGS = False
 
     # Crée un tableau
     def __init__(self, A, b, c, isMinimization):
@@ -257,7 +257,7 @@ class Tableau:
 
         for varId in range(self.n):
             self.bestSolution[varId] = tSlack.bestSolution[varId]
-            print("varId = ", varId, " solution value: ", "%.2f" % tSlack.bestSolution[varId])
+            # print("varId = ", varId, " solution value: ", "%.2f" % tSlack.bestSolution[varId])
 
         self.bestObjective = tSlack.bestObjective
 
